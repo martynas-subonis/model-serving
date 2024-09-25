@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "onnx-serving"
+version = "0.1.0"
+description = "A Python-Based Example for Model Serving with ONNX Runtime."
+authors = ["Martynas Subonis <martynas.subonis@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "~3.12"
+fastapi = "0.115.2"
+gcloud-aio-storage = "9.3.0"
+numpy = "2.1.2"
+onnxruntime = "1.19.2"
+opentelemetry-api = "1.27.0"
+opentelemetry-instrumentation-fastapi = "0.48b0"
+opentelemetry-sdk = "1.27.0"
+pillow = "10.4.0"
+pydantic = "2.9.2"
+uvicorn = "0.31.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
