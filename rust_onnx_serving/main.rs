@@ -1,7 +1,5 @@
 use actix_web::error::ErrorInternalServerError;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
-use chrono::SecondsFormat::Micros;
-use chrono::{DateTime, Utc};
 use google_cloud_storage::client::{Client, ClientConfig};
 use google_cloud_storage::http::objects::download::Range;
 use google_cloud_storage::http::objects::get::GetObjectRequest;
@@ -9,7 +7,6 @@ use image::ImageReader;
 use ndarray::Array;
 use ort::{GraphOptimizationLevel, Session, Value};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::cmp::Ordering;
 use std::sync::Arc;
 
@@ -109,7 +106,6 @@ async fn prediction_endpoint(
     app_state: web::Data<AppState>,
     payload: web::Json<Payload>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let downloading_image_st = Utc::now();
     let contents = {
         let get_request = GetObjectRequest {
             bucket: payload.bucket_name.clone(),
@@ -122,10 +118,7 @@ async fn prediction_endpoint(
             .await
             .map_err(ErrorInternalServerError)?
     };
-    log_event("async-downloading-image", downloading_image_st)?;
-    let preprocessing_and_model_inference_st = Utc::now();
     let prediction = {
-        let preprocessing_image_st = Utc::now();
         let img = ImageReader::new(std::io::Cursor::new(contents))
             .with_guessed_format()
             .map_err(ErrorInternalServerError)?
@@ -141,8 +134,6 @@ async fn prediction_endpoint(
 
         let input_tensor = ort::Tensor::from_array(img_array).map_err(ErrorInternalServerError)?;
         let inputs: Vec<(String, Value)> = vec![("input".to_string(), Value::from(input_tensor))];
-        log_event("preprocessing-image", preprocessing_image_st)?;
-        let model_inference_st = Utc::now();
         let output_tensors = app_state
             .session
             .run_async(inputs)
@@ -160,7 +151,6 @@ async fn prediction_endpoint(
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(Ordering::Equal))
             .map(|(idx, _)| idx)
             .ok_or_else(|| ErrorInternalServerError("Prediction failed"))?;
-        log_event("model-inference", model_inference_st)?;
         match max_prob_idx {
             0 => WeatherClass::Dew,
             1 => WeatherClass::Fogsmog,
@@ -176,23 +166,6 @@ async fn prediction_endpoint(
             _ => return Err(ErrorInternalServerError("Invalid class index")),
         }
     };
-    log_event(
-        "preprocessing-and-model-inference",
-        preprocessing_and_model_inference_st,
-    )?;
     let response = Response { prediction };
     Ok(HttpResponse::Ok().json(response))
-}
-
-fn log_event(name: &str, start_time: DateTime<Utc>) -> Result<(), actix_web::Error> {
-    let event = json!({
-        "name": name,
-        "start_time": start_time.to_rfc3339_opts(Micros, true),
-        "end_time":  Utc::now().to_rfc3339_opts(Micros, true),
-    });
-    println!(
-        "{}",
-        serde_json::to_string(&event).map_err(ErrorInternalServerError)?
-    );
-    Ok(())
 }
