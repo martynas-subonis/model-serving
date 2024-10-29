@@ -9,16 +9,10 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "~3.12"
-prettytable = "3.11.0"
+pillow = "10.4.0"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "0.6.7"
-mypy = "1.11.2"
-
-[tool.mypy]
-strict = true
-ignore_missing_imports = true
-explicit_package_bases = true
 
 [tool.ruff]
 line-length = 150

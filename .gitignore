@@ -1,6 +1,5 @@
-*.jsonl
 start_times.json
-
+.DS_Store
 .idea
 .python-version
 

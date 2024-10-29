@@ -28,8 +28,18 @@ collect_stats() {
     } >> "$stats_log"
 }
 
-# Create payload file
-echo '{"bucketName": "weather_imgs", "imagePath": "rime/5868.jpg"}' > payload.json
+# Cleanup function
+cleanup() {
+    # Kill the monitoring process if it exists
+    if [ ! -z "$MONITOR_PID" ]; then
+        kill $MONITOR_PID 2>/dev/null
+        wait $MONITOR_PID 2>/dev/null
+    fi
+}
+
+trap cleanup EXIT
+
+: > "$stats_log"
 
 # Run benchmarks for each container
 for i in "${!containers[@]}"; do
@@ -45,10 +55,17 @@ for i in "${!containers[@]}"; do
     } >/dev/null 2>&1 &
     MONITOR_PID=$!
 
-    ab -n 2000 -c 50 -p payload.json -T 'application/json' -s 3600 "http://localhost:$port/predict/"
+    # Run ab and capture its exit code
+    ab -n 5000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http://localhost:$port/predict/"
+    AB_EXIT_CODE=$?
 
-    { kill $MONITOR_PID && wait $MONITOR_PID; } 2>/dev/null
+    # Kill and wait for the monitoring process
+    cleanup
+
+    # If ab failed, exit with its code
+    if [ $AB_EXIT_CODE -ne 0 ]; then
+        exit $AB_EXIT_CODE
+    fi
 done
 
-# Clean up
-rm payload.json
+exit 0

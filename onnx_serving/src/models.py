@@ -42,8 +42,7 @@ class Healthy(BaseModel):
 
 
 class Payload(AliasedBaseModel):
-    bucket_name: str = Field(..., examples=["weather_imgs"], min_length=1)
-    image_path: str = Field(..., examples=["dew/2209.jpg"], min_length=1)
+    image: str
 
 
 class Response(AliasedBaseModel):

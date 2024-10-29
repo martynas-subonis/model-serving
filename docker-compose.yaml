@@ -8,11 +8,6 @@ services:
         - torch_model_uri
     image: torch-serving
     container_name: torch-serving-container
-    environment:
-      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
-      CLOUDSDK_CORE_PROJECT: ${GOOGLE_CLOUD_PROJECT}
-    volumes:
-      - ${HOME}/.config/gcloud:/root/.config/gcloud
     ports:
       - "8081:8081"
     deploy:
@@ -31,11 +26,6 @@ services:
         - onnx_model_uri
     image: onnx-serving
     container_name: onnx-serving-container
-    environment:
-      GOOGLE_CLOUD_PROJECT: ${GOOGLE_CLOUD_PROJECT}
-      CLOUDSDK_CORE_PROJECT: ${GOOGLE_CLOUD_PROJECT}
-    volumes:
-      - ${HOME}/.config/gcloud:/root/.config/gcloud
     ports:
       - "8080:8080"
     deploy:
@@ -54,8 +44,6 @@ services:
         - onnx_model_uri
     image: rust-onnx-serving
     container_name: rust-onnx-serving-container
-    volumes:
-      - ${HOME}/.config/gcloud:/root/.config/gcloud
     ports:
       - "8082:8082"
     deploy:
