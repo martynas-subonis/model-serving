@@ -56,7 +56,7 @@ for i in "${!containers[@]}"; do
     MONITOR_PID=$!
 
     # Run ab and capture its exit code
-    ab -n 5000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http://localhost:$port/predict/"
+    ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http://localhost:$port/predict/"
     AB_EXIT_CODE=$?
 
     # Kill and wait for the monitoring process

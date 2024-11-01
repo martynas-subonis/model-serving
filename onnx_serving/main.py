@@ -16,7 +16,7 @@ sess_options.graph_optimization_level = rt.GraphOptimizationLevel.ORT_DISABLE_AL
 # Set ONNXRuntime to use one thread per worker to prevent CPU oversubscription
 sess_options.intra_op_num_threads = 1
 sess_options.inter_op_num_threads = 1
-session = rt.InferenceSession(f"model.onnx", sess_options)
+session = rt.InferenceSession("model.onnx", sess_options)
 
 
 @app.get("/")

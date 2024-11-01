@@ -3,7 +3,7 @@ extern crate core;
 use actix_web::error::ErrorInternalServerError;
 use actix_web::{web, App, HttpResponse, HttpServer, Responder};
 use base64::{engine::general_purpose::STANDARD, Engine as _};
-use ndarray::{Array, Array4};
+use ndarray::{Array, Axis};
 use ort::{GraphOptimizationLevel, Session, Value};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
@@ -98,28 +98,12 @@ async fn health_endpoint() -> impl Responder {
     HttpResponse::Ok().json(healthy)
 }
 
-#[inline]
-fn process_image(raw_data: &[u8], width: u32, height: u32) -> Array4<f32> {
-    // Pre-allocate the output array with the correct shape
-    let mut output = Array::zeros((1, 3, height as usize, width as usize));
-    // Process RGB channels in one pass
-    for y in 0..height as usize {
-        for x in 0..width as usize {
-            let pixel_start = (y * width as usize + x) * 3;
-            output[[0, 0, y, x]] = raw_data[pixel_start] as f32; // R
-            output[[0, 1, y, x]] = raw_data[pixel_start + 1] as f32; // G
-            output[[0, 2, y, x]] = raw_data[pixel_start + 2] as f32; // B
-        }
-    }
-    output
-}
-
 async fn prediction_endpoint(
     app_state: web::Data<AppState>,
     payload: web::Json<Payload>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let image_bytes = STANDARD
-        .decode(payload.image.as_bytes()) // Use as_bytes() to avoid clone
+        .decode(payload.image.as_bytes())
         .map_err(ErrorInternalServerError)?;
 
     let img = image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Jpeg)
@@ -127,11 +111,18 @@ async fn prediction_endpoint(
         .to_rgb8();
 
     let (width, height) = img.dimensions();
-    let img_array = process_image(img.as_raw(), width, height);
+    let raw_data = img.into_raw();
+
+    let img_array = Array::from_shape_vec((height as usize, width as usize, 3), raw_data)
+        .map_err(ErrorInternalServerError)?;
+
+    let img_array = img_array
+        .mapv(|x| x as f32)
+        .permuted_axes([2, 0, 1])
+        .insert_axis(Axis(0));
 
     let input_tensor = ort::Tensor::from_array(img_array).map_err(ErrorInternalServerError)?;
-    let inputs: Vec<(String, Value)> = vec![("input".to_string(), Value::from(input_tensor))];
-
+    let inputs: Vec<(String, Value)> = vec![("input".to_string(), input_tensor.into())];
     let output_tensors = app_state
         .session
         .run_async(inputs)

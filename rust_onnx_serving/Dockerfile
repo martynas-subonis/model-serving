@@ -64,5 +64,5 @@ COPY --from=builder /lib/aarch64-linux-gnu/libc.so.6 /lib/
 COPY --from=builder /lib/ld-linux-aarch64.so.1 /lib/
 
 EXPOSE 8082
-ENV RUST_LOG=info
+ENV RUST_LOG=warning
 CMD ["./rust_onnx_serving"]

@@ -33,4 +33,12 @@ EXPOSE 8080
 COPY --from=venv-builder /app/.venv .venv
 COPY --from=model-downloader /app/"model.onnx" .
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "4", "--limit-concurrency", "2000", "--limit-max-requests", "2000", "--timeout-keep-alive", "480", "--timeout-graceful-shutdown", "480"]
+CMD uvicorn main:app \
+    --host 0.0.0.0 \
+    --port 8080 \
+    --workers 4 \
+    --limit-concurrency 2000 \
+    --limit-max-requests 40000 \
+    --timeout-keep-alive 480 \
+    --timeout-graceful-shutdown 480 \
+    --log-level warning
