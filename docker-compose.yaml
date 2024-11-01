@@ -1,0 +1,62 @@
+services:
+  torch-serving:
+    build:
+      context: ./torch_serving
+      dockerfile: Dockerfile
+      secrets:
+        - access_token
+        - torch_model_uri
+    image: torch-serving
+    container_name: torch-serving-container
+    ports:
+      - "8081:8081"
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+        reservations:
+          cpus: "4"
+
+  onnx-serving:
+    build:
+      context: ./onnx_serving
+      dockerfile: Dockerfile
+      secrets:
+        - access_token
+        - onnx_model_uri
+    image: onnx-serving
+    container_name: onnx-serving-container
+    ports:
+      - "8080:8080"
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+        reservations:
+          cpus: "4"
+
+  rust-onnx-serving:
+    build:
+      context: ./rust_onnx_serving
+      dockerfile: Dockerfile
+      secrets:
+        - access_token
+        - onnx_model_uri
+    image: rust-onnx-serving
+    container_name: rust-onnx-serving-container
+    ports:
+      - "8082:8082"
+    deploy:
+      resources:
+        limits:
+          cpus: "4"
+        reservations:
+          cpus: "4"
+
+secrets:
+  access_token:
+    environment: CLOUDSDK_AUTH_ACCESS_TOKEN
+  onnx_model_uri:
+    environment: ONNX_MODEL_URI
+  torch_model_uri:
+    environment: TORCH_MODEL_URI

@@ -1,0 +1,27 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.7
+    hooks:
+      - id: ruff
+        args: [ --fix, --extend-select=I ]
+        exclude: ^rust_onnx_serving/
+      - id: ruff-format
+        exclude: ^rust_onnx_serving/
+
+  - repo: local
+    hooks:
+      - id: cargo-fmt
+        name: cargo fmt
+        description: Format Rust code
+        entry: bash -c 'cd rust_onnx_serving && cargo fmt --all'
+        language: system
+        files: \.rs$
+        pass_filenames: false
+
+      - id: cargo-clippy
+        name: cargo clippy
+        description: Lint Rust code
+        entry: bash -c 'cd rust_onnx_serving && cargo clippy --all --all-features -- -D warnings'
+        language: system
+        files: \.rs$
+        pass_filenames: false

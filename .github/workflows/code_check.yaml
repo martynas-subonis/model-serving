@@ -1,0 +1,49 @@
+name: Code Quality Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  python-code-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: 1.8.3
+
+      - name: Install dependencies using Poetry
+        run: poetry install
+
+      - name: Run ruff check
+        run: |
+          poetry run ruff check --select I onnx_serving torch_serving encode_img.py
+          poetry run ruff format --check onnx_serving torch_serving encode_img.py
+
+  rust-code-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rust_onnx_serving
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Rust setup
+        run: rustup toolchain install stable --profile minimal
+
+      - name: Rust fmt
+        run: cargo fmt --check
+
+      - name: Rust lint check
+        run: cargo clippy --all --all-features -- -D warnings

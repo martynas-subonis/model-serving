@@ -1,0 +1,16 @@
+[package]
+name = "rust_onnx_serving"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "rust_onnx_serving"
+path = "main.rs"
+
+[dependencies]
+actix-web = "4.9.0"
+base64 = "0.22.1"
+image = { version = "0.25.4", features = ["jpeg", "png"] }
+ndarray = "0.16.1"
+ort = { version = "2.0.0-rc.8" }
+serde = { version = "1.0.210", features = ["derive"] }
