@@ -173,7 +173,7 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 | **Requests per second (mean)**                            | 35.62             | 255.53           | 328.94                |
 | **Time per request (ms)**                                 | 1403.734          | 195.672          | 152.005               |
 | **Time per request (ms, across all concurrent requests)** | 28.075            | 3.913            | 3.040                 |
-| **Transfer rate (KB/s)**                                  | 10787.39          | 77387.62         | 99607.50              |
+| **Transfer rate (MB/s)**                                  | 10.54             | 75.58            | 97.28                 |
 | **Memory Usage (MB, mean)**                               | 921.46            | 359.12           | 795.45                |
 
 ### Deployment Metrics
