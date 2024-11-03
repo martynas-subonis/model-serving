@@ -72,17 +72,20 @@ For more detailed information, please refer to [ml-workflows](https://github.com
 
 Three different approaches are benchmarked in this project:
 
-- Naive model serving using [PyTorch](https://pytorch.org/docs/stable/index.html) and [FastAPI](https://fastapi.tiangolo.com/) (Python),
-  with `model.eval()` and `torch.inference_mode()`. Please see [torch_serving](torch_serving).
-- Model serving using [ONNX Runtime](https://onnxruntime.ai/docs/get-started/with-python.html)
-  and [FastAPI](https://fastapi.tiangolo.com/) (Python), where input transformation logic was integrated into the graph
-  and [graph optimizations were applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode).
-  Please see [onnx_serving](onnx_serving).
-- Model serving using [ONNX Runtime](https://onnxruntime.ai/docs/build/inferencing.html) (built from source and
-  using [pykeio/ort](https://github.com/pykeio/ort) wrapper) and [actix-web](https://actix.rs/docs/whatis) (Rust), where input
-  transformation logic was integrated into the graph
-  and [graph optimizations were applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode).
-  Please see [rust_onnx_serving](rust_onnx_serving).
+- Naive Model Serving with [PyTorch](https://pytorch.org/docs/stable/index.html) and [FastAPI](https://fastapi.tiangolo.com/) (Python): This setup uses PyTorch
+  with `model.eval()` and `torch.inference_mode()` enabled. No ONNX or ONNX Runtime optimizations are applied; instead, we serve the model directly from its
+  saved `state_dict` after training. Although this approach is less optimized, it remains common in practice, with Flask or Django being possible alternatives
+  to FastAPI, making it a valuable baseline for our benchmarks. Please see [torch_serving](torch_serving).
+
+- Optimized Model Serving with [ONNX Runtime](https://onnxruntime.ai/docs/get-started/with-python.html) and FastAPI (Python): In this approach, we leverage ONNX
+  Runtime for serving. Input transformation logic is embedded directly into the model’s computation
+  graph, [and graph optimizations are applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode),
+  providing a more efficient alternative to the naive approach. Please see [onnx_serving](onnx_serving).
+
+- Optimized Model Serving with ONNX Runtime and [Actix-Web](https://actix.rs/docs/whatis) (Rust): Here, we use a Rust-based setup with ONNX
+  Runtime ([built from source](https://onnxruntime.ai/docs/build/inferencing.html) and utilizing the [pykeio/ort wrapper](https://github.com/pykeio/ort)) and
+  Actix-Web for serving. Like the previous setup, input transformation logic is embedded in the model graph, and offline graph optimizations are applied, aiming
+  for maximum performance. Please see [rust_onnx_serving](rust_onnx_serving).
 
 ## Running Applications
 
@@ -97,17 +100,14 @@ This process may take some time on the first run, especially for the Docker imag
 
 ## Benchmark Context
 
-**IMPORTANT: When interpreting benchmark results, it is important to avoid treating them as generalizable values. The absolute performance can
-vary significantly depending on the hardware, operating system (OS),
-and [Application Binary Interface (ABI)](https://en.wikipedia.org/wiki/Application_binary_interface) (
-e.g., [GNU](https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html) or [MUSL](https://wiki.musl-libc.org/abi-manuals)) on which the model
-is deployed.**
+**When interpreting benchmark results, avoid treating them as universally applicable values, as absolute performance can vary significantly with different
+hardware, operating systems (OS), and C standard library implementations (e.g., glibc or musl), which affect the Application Binary Interface (ABI).**
 
 Furthermore, performance metrics can differ based on the sizes of the input images; therefore, in a production environment, it would be important to
 understand the distribution of image sizes. For the purposes of this exercise, the focus should be on the **relative performance differences** between different
 serving strategies.
 
-To accurately assess how a model service will perform on a specific host machine, the only reliable method is to conduct direct testing.
+The most reliable way to assess model service performance on a specific host machine is to conduct direct testing in that environment.
 
 ### Host System
 
@@ -174,7 +174,7 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 | **Time per request (ms)**                                 | 1403.734          | 195.672          | 152.005               |
 | **Time per request (ms, across all concurrent requests)** | 28.075            | 3.913            | 3.040                 |
 | **Transfer rate (MB/s)**                                  | 10.54             | 75.58            | 97.28                 |
-| **Memory Usage (MB, mean)**                               | 921.46            | 359.12           | 795.45                |
+| **Memory Usage (MB, mean)**                               | 921.46            | 359.12           | 687.6                 |
 
 ### Deployment Metrics
 
@@ -184,10 +184,6 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 | **Application start time (s, n=15 mean)** | 4.342             | 1.396            | 0.348                 |
 
 ## Conclusions
-
-**IMPORTANT: As already mentioned in [Benchmark Context](#benchmark-context) - when interpreting benchmark results, it is important to avoid treating them as
-generalizable values. The absolute performance can vary significantly depending on the hardware, OS and ABI on which the model is deployed. For the purposes of
-this exercise, the focus should be on the relative performance differences between different serving strategies.**
 
 - **ONNX Runtime Significantly Improves Performance:** Converting models to ONNX and serving them with ONNX Runtime greatly enhances throughput and reduces
   latency compared to serving with PyTorch. Specifically:
@@ -208,7 +204,14 @@ this exercise, the focus should be on the relative performance differences betwe
       potentially leading to higher memory consumption.
     - **Library Efficiency:** The Rust `ort` crate is an unofficial wrapper and might manage memory differently compared to the official ONNX Runtime SDK
       for Python, which is mature and highly optimized.
+    - **Threading Configuration:** The Rust implementation uses more intra-threads, which contributes to some additional memory consumption. However, this
+      likely accounts for only a minor portion of the overall difference observed.
 
-**The last memory point is just a consequence of a more important factor: Python’s maturity and extensive ecosystem for machine learning. Rewriting these
+The last memory point is just a consequence of a more important factor: Python’s mature and extensive ecosystem for machine learning. Rewriting these
 serving strategies in Rust can introduce challenges, such as increased development effort, potential performance trade-offs where optimized crates are
-unavailable, and added complexity. However, Rust's benefits may sometimes justify the effort, depending on specific business needs.**
+unavailable (or one has to write them), and added complexity. However, Rust's benefits may sometimes justify the effort, depending on specific business needs.
+
+Using inference-optimized solutions like ONNX Runtime can significantly enhance model serving performance, especially for larger models. While this article
+uses a small model (MobileNet V3-small, ~1.53 million parameters), the benefits of ONNX Runtime become more pronounced with more complex architectures. Its
+ability to optimize computation graphs and streamline resource usage leads to higher throughput and reduced latency, making it invaluable for scaling
+model-serving solutions.
