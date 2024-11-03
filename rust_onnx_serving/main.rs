@@ -102,39 +102,42 @@ async fn prediction_endpoint(
     app_state: web::Data<AppState>,
     payload: web::Json<Payload>,
 ) -> Result<HttpResponse, actix_web::Error> {
-    let image_bytes = STANDARD
-        .decode(payload.image.as_bytes())
-        .map_err(ErrorInternalServerError)?;
+    let inputs: Vec<(String, Value)> = vec![(
+        "input".to_string(),
+        ort::Tensor::from_array({
+            let decoded_img = image::load_from_memory_with_format(
+                &STANDARD
+                    .decode(payload.image.as_bytes())
+                    .map_err(ErrorInternalServerError)?,
+                image::ImageFormat::Jpeg,
+            )
+            .map_err(ErrorInternalServerError)?
+            .into_rgb8();
 
-    let img = image::load_from_memory_with_format(&image_bytes, image::ImageFormat::Jpeg)
+            Array::from_shape_vec(
+                {
+                    let (width, height) = decoded_img.dimensions();
+                    (height as usize, width as usize, 3)
+                },
+                decoded_img.into_raw(),
+            )
+            .map_err(ErrorInternalServerError)?
+            .mapv(|x| x as f32)
+            .permuted_axes([2, 0, 1])
+            .insert_axis(Axis(0))
+        })
         .map_err(ErrorInternalServerError)?
-        .to_rgb8();
+        .into(),
+    )];
 
-    let (width, height) = img.dimensions();
-    let raw_data = img.into_raw();
-
-    let img_array = Array::from_shape_vec((height as usize, width as usize, 3), raw_data)
-        .map_err(ErrorInternalServerError)?;
-
-    let img_array = img_array
-        .mapv(|x| x as f32)
-        .permuted_axes([2, 0, 1])
-        .insert_axis(Axis(0));
-
-    let input_tensor = ort::Tensor::from_array(img_array).map_err(ErrorInternalServerError)?;
-    let inputs: Vec<(String, Value)> = vec![("input".to_string(), input_tensor.into())];
-    let output_tensors = app_state
+    let prediction = match app_state
         .session
         .run_async(inputs)
         .map_err(ErrorInternalServerError)?
         .await
-        .map_err(ErrorInternalServerError)?;
-
-    let output_array = output_tensors[0]
+        .map_err(ErrorInternalServerError)?[0]
         .try_extract_tensor::<f32>()
-        .map_err(ErrorInternalServerError)?;
-
-    let prediction = match output_array
+        .map_err(ErrorInternalServerError)?
         .iter()
         .enumerate()
         .max_by(|a, b| a.1.partial_cmp(b.1).unwrap_or(Ordering::Equal))

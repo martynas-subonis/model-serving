@@ -97,17 +97,14 @@ This process may take some time on the first run, especially for the Docker imag
 
 ## Benchmark Context
 
-**IMPORTANT: When interpreting benchmark results, it is important to avoid treating them as generalizable values. The absolute performance can
-vary significantly depending on the hardware, operating system (OS),
-and [Application Binary Interface (ABI)](https://en.wikipedia.org/wiki/Application_binary_interface) (
-e.g., [GNU](https://gcc.gnu.org/onlinedocs/libstdc++/manual/abi.html) or [MUSL](https://wiki.musl-libc.org/abi-manuals)) on which the model
-is deployed.**
+**When interpreting benchmark results, avoid treating them as universally applicable values, as absolute performance can vary significantly with different
+hardware, operating systems (OS), and C standard library implementations (e.g., glibc or musl), which affect the Application Binary Interface (ABI).**
 
 Furthermore, performance metrics can differ based on the sizes of the input images; therefore, in a production environment, it would be important to
 understand the distribution of image sizes. For the purposes of this exercise, the focus should be on the **relative performance differences** between different
 serving strategies.
 
-To accurately assess how a model service will perform on a specific host machine, the only reliable method is to conduct direct testing.
+The most reliable way to assess model service performance on a specific host machine is to conduct direct testing in that environment.
 
 ### Host System
 
@@ -174,7 +171,7 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 | **Time per request (ms)**                                 | 1403.734          | 195.672          | 152.005               |
 | **Time per request (ms, across all concurrent requests)** | 28.075            | 3.913            | 3.040                 |
 | **Transfer rate (MB/s)**                                  | 10.54             | 75.58            | 97.28                 |
-| **Memory Usage (MB, mean)**                               | 921.46            | 359.12           | 795.45                |
+| **Memory Usage (MB, mean)**                               | 921.46            | 359.12           | 687.6                 |
 
 ### Deployment Metrics
 
@@ -184,10 +181,6 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 | **Application start time (s, n=15 mean)** | 4.342             | 1.396            | 0.348                 |
 
 ## Conclusions
-
-**IMPORTANT: As already mentioned in [Benchmark Context](#benchmark-context) - when interpreting benchmark results, it is important to avoid treating them as
-generalizable values. The absolute performance can vary significantly depending on the hardware, OS and ABI on which the model is deployed. For the purposes of
-this exercise, the focus should be on the relative performance differences between different serving strategies.**
 
 - **ONNX Runtime Significantly Improves Performance:** Converting models to ONNX and serving them with ONNX Runtime greatly enhances throughput and reduces
   latency compared to serving with PyTorch. Specifically:
@@ -208,7 +201,14 @@ this exercise, the focus should be on the relative performance differences betwe
       potentially leading to higher memory consumption.
     - **Library Efficiency:** The Rust `ort` crate is an unofficial wrapper and might manage memory differently compared to the official ONNX Runtime SDK
       for Python, which is mature and highly optimized.
+    - **Threading Configuration:** The Rust implementation uses more intra-threads, which contributes to some additional memory consumption. However, this
+      likely accounts for only a minor portion of the overall difference observed.
 
-**The last memory point is just a consequence of a more important factor: Python’s maturity and extensive ecosystem for machine learning. Rewriting these
+The last memory point is just a consequence of a more important factor: Python’s mature and extensive ecosystem for machine learning. Rewriting these
 serving strategies in Rust can introduce challenges, such as increased development effort, potential performance trade-offs where optimized crates are
-unavailable, and added complexity. However, Rust's benefits may sometimes justify the effort, depending on specific business needs.**
+unavailable (or one has to write them), and added complexity. However, Rust's benefits may sometimes justify the effort, depending on specific business needs.
+
+Using inference-optimized solutions like ONNX Runtime can significantly enhance model serving performance, especially for larger models. While this article
+uses a small model (MobileNet V3-small, ~1.53 million parameters), the benefits of ONNX Runtime become more pronounced with more complex architectures. Its
+ability to optimize computation graphs and streamline resource usage leads to higher throughput and reduced latency, making it invaluable for scaling
+model-serving solutions.
