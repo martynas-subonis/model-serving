@@ -72,17 +72,20 @@ For more detailed information, please refer to [ml-workflows](https://github.com
 
 Three different approaches are benchmarked in this project:
 
-- Naive model serving using [PyTorch](https://pytorch.org/docs/stable/index.html) and [FastAPI](https://fastapi.tiangolo.com/) (Python),
-  with `model.eval()` and `torch.inference_mode()`. Please see [torch_serving](torch_serving).
-- Model serving using [ONNX Runtime](https://onnxruntime.ai/docs/get-started/with-python.html)
-  and [FastAPI](https://fastapi.tiangolo.com/) (Python), where input transformation logic was integrated into the graph
-  and [graph optimizations were applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode).
-  Please see [onnx_serving](onnx_serving).
-- Model serving using [ONNX Runtime](https://onnxruntime.ai/docs/build/inferencing.html) (built from source and
-  using [pykeio/ort](https://github.com/pykeio/ort) wrapper) and [actix-web](https://actix.rs/docs/whatis) (Rust), where input
-  transformation logic was integrated into the graph
-  and [graph optimizations were applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode).
-  Please see [rust_onnx_serving](rust_onnx_serving).
+- Naive Model Serving with [PyTorch](https://pytorch.org/docs/stable/index.html) and [FastAPI](https://fastapi.tiangolo.com/) (Python): This setup uses PyTorch
+  with `model.eval()` and `torch.inference_mode()` enabled. No ONNX or ONNX Runtime optimizations are applied; instead, we serve the model directly from its
+  saved `state_dict` after training. Although this approach is less optimized, it remains common in practice, with Flask or Django being possible alternatives
+  to FastAPI, making it a valuable baseline for our benchmarks. Please see [torch_serving](torch_serving).
+
+- Optimized Model Serving with [ONNX Runtime](https://onnxruntime.ai/docs/get-started/with-python.html) and FastAPI (Python): In this approach, we leverage ONNX
+  Runtime for serving. Input transformation logic is embedded directly into the model’s computation
+  graph, [and graph optimizations are applied offline](https://onnxruntime.ai/docs/performance/model-optimizations/graph-optimizations.html#onlineoffline-mode),
+  providing a more efficient alternative to the naive approach. Please see [onnx_serving](onnx_serving).
+
+- Optimized Model Serving with ONNX Runtime and [Actix-Web](https://actix.rs/docs/whatis) (Rust): Here, we use a Rust-based setup with ONNX
+  Runtime ([built from source](https://onnxruntime.ai/docs/build/inferencing.html) and utilizing the [pykeio/ort wrapper](https://github.com/pykeio/ort)) and
+  Actix-Web for serving. Like the previous setup, input transformation logic is embedded in the model graph, and offline graph optimizations are applied, aiming
+  for maximum performance. Please see [rust_onnx_serving](rust_onnx_serving).
 
 ## Running Applications
 
