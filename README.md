@@ -200,12 +200,12 @@ ab -n 40000 -c 50 -p images/rime_5868.json -T 'application/json' -s 3600 "http:/
 
 - **Memory Usage Difference:** The higher memory usage in Rust compared to Python ONNX serving stems from differences in
   implementations and libraries used:
-    - **Image Processing Differences:** The Rust implementation may use less optimized image processing compared to Python's PIL and NumPy libraries,
+    - **Image Processing Differences:** The Rust implementation uses less optimized image processing compared to Python's PIL and NumPy libraries,
       potentially leading to higher memory consumption.
     - **Library Efficiency:** The Rust `ort` crate is an unofficial wrapper and might manage memory differently compared to the official ONNX Runtime SDK
       for Python, which is mature and highly optimized.
     - **Threading Configuration:** The Rust implementation uses more intra-threads, which contributes to some additional memory consumption. However, this
-      likely accounts for only a minor portion of the overall difference observed.
+      accounts for only a minor portion of the overall difference observed.
 
 The last memory point is just a consequence of a more important factor: Python’s mature and extensive ecosystem for machine learning. Rewriting these
 serving strategies in Rust can introduce challenges, such as increased development effort, potential performance trade-offs where optimized crates are
