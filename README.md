@@ -4,6 +4,9 @@ This repository demonstrates various model serving strategies, from basic PyTorc
 Each approach is benchmarked to compare performance under standardized conditions. The goal of this project is to illustrate how different
 serving strategies influence model service load capacity and to evaluate secondary metrics, including image size and container startup time.
 
+An extensive write-up with detailed explanations about the technologies used and approaches taken can be found 
+[here](https://martynassubonis.substack.com/p/optimize-for-speed-and-savings-high).
+
 For eager readers - please refer to [Benchmark Setup](#benchmark-setup), [Benchmark Results](#benchmark-results) and [Conclusions](#conclusions) directly.
 
 ## Table of Contents
